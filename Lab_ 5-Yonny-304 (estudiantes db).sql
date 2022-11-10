@@ -15,35 +15,12 @@ $$
 DECLARE
     var profesor%ROWTYPE;
     curs1 CURSOR FOR
-        (SELECT nombprof as nombre from profesor
+        SELECT nombprof as nombre from profesor
         WHERE idprof
-        ORDER BY idprof);
-
-    cont INTEGER = 5;
+        ORDER BY idprof;
         
 BEGIN
-    OPEN curs1;
-    MOVE ABSOLUTE 5 FROM curs1;
-    LOOP
-        IF (cont<=10) THEN
-            UPDATE profesor SET categoria = "Profesor Auxiliar" WHERE CURRENT OF curs1;
-            MOVE RELATIVE 1 FROM curs1;
-        ELSE
-            EXIT;
-        END IF;
-        cont = cont + 1;
-    END LOOP
-    CLOSE curs1;
-    OPEN curs1;
-
-    LOOP
-        FETCH curs1 INTO var;
-        RETURN NEXT var;
-        IF NOT FOUND THEN 
-            EXIT;
-        END IF;
-    END LOOP;
-    CLOSE curs1;
+    
 END
 $$
 LANGUAGE 'plpgsql';
@@ -52,20 +29,22 @@ SELECT * from profesor
     ORDER BY idprof;
 
 
-
--- CASO1 : Uso simple de cursores EXPLÍCITOS 
-CREATE OR REPLACE FUNCTION expl_cursor1() RETURNS SETOF profesor AS
+    CREATE OR REPLACE FUNCTION cursor_while() RETURNS VOID AS
 $BODY$
 DECLARE
-    -- Declaración EXPLICITA del cursor
-    cur_clientes CURSOR FOR SELECT * FROM profesor; 
-    registro profesor%ROWTYPE;
+    reg          RECORD;
+    cur_clientes CURSOR FOR SELECT * FROM profesor
+                 ORDER BY idprof;
 BEGIN
-   -- Procesa el cursor
-   FOR registro IN cur_clientes LOOP
-       RETURN NEXT registro;
-   END LOOP;
+   OPEN cur_clientes;
+   FETCH cur_clientes INTO reg;
+   WHILE( FOUND ) LOOP
+       RAISE NOTICE ' PROCESANDO  %', reg.nombprof;
+       FETCH cur_clientes INTO reg;
+   END LOOP ;
    RETURN;
-END $BODY$ LANGUAGE 'plpgsql';
+END
+$BODY$
+LANGUAGE 'plpgsql';
 
-SELECT expl_cursor1(); 
+select cursor_while();
