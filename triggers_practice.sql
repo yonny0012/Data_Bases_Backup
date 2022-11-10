@@ -32,7 +32,42 @@ CREATE TRIGGER insert_opinion AFTER DELETE ON opinion_temporal
 
 
 
+--POSIBLE RESPUESTA: 
+--(función)
+CREATE OR REPLACE FUNCTION trigger_func() RETURNS trigger AS --declaracion de la funcion que retorna un trigger
+$BODY$
+DECLARE
+	cant integer; --declara una variable para contar
+BEGIN
+	--se cuenta lo que pide el ejercicio
+	/*
+	la consulta une las tablas opinion_publicada y opinion, por id_opinion.
+	donde coincidan con el id_tema de la tupla eliminada en el trigger	
+	*/
+	cant:=(select count("opinion_publicada".id_opinion)
+		   FROM "opinion_publicada" Inner Join opinion ON 
+		   		("opinion_publicada".id_opinion = opinion.id_opinion) 
+		   WHERE opinion.id_tema=
+		   (SELECT opinion.id_tema FROM opinion WHERE opinion.id_opinion= OLD.id_opinion));
+	--condicion
+	IF(cant<300)THEN
+	--se insxerta en opinion pubicada la acabada de eliminar
+		INSERT INTO "opinion_publicada" VALUES (OLD.id_opinion, CURRENT_DATE);
+	--si no, se inerta en opinion denegada
+	ELSE
+		INSERT INTO "opinion_denegada" VALUES (OLD.id_opinion,'Tema completo');
+	END IF;
+	RETURN NULL;
+END;
+$BODY$
+LANGUAGE 'plpgsql' VOLATILE;
 
+--(trigger)
+/*declara el trigger que, despues de eliminaar una tupla de Opinion_temporal
+	ejecutara la funcion*/
+CREATE TRIGGER "trigger1" AFTER DELETE
+	ON "public"."opinion_temporal" FOR EACH ROW
+	EXECUTE PROCEDURE "public"."trigger_func"();
 
 
 
