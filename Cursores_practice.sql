@@ -270,3 +270,58 @@ select impl_cursor2 ();
     FETCH ALL FROM a;
     FETCH ALL FROM b;
     COMMIT;
+
+    --      Ciclos a través del resultado de un cursor
+    --  Hay una variante de FOR para iterar a través de las filas recuperadas por un cursor. 
+    --  La sintaxis es:
+
+    /*
+        [ <<label >> ]
+        FOR recordvar IN bound_cursorvar [ ( [ argument_name := ] argument_value [, ...] ) ] LOOP
+        statements
+        END LOOP [ label ];
+
+        *   La variable del cursor está ligada a una consulta cuando es declarada, 
+        sino no puede ser abierta
+        *   FOR abre el cursor y lo cierra cuando sale del ciclo.
+        *   Una lista de argumentos aparece si, y sólo si, el cursor fue declarado con ellos.
+        *   Los valores son sustituidos en la consulta, igual que ocurre en un OPEN.
+
+        *   La variable recordvar es definida de tipo record y sólo existe dentro del ciclo 
+        (cualquier definición de la variable es ignorada en el ciclo)
+        *   Cada fila recuperada por el cursor es sucesivamente asignada a la variable record y el cuerpo del ciclo es ejecutado.
+    */
+
+    --      Declarando cursor con variables
+
+    /*
+        El acceso a los cursores es a través de variables del tipo refcursor. Una forma de crear
+    una variable para un cursor es declararla como refcursor. 
+        Otra, es utilizar la sintaxis de la declaración del cursor, la cual es:
+
+        >>>     name [ [ NO ] SCROLL ] CURSOR [ ( arguments ) ] FOR query;
+
+            Si SCROLL es especificado, el cursor de desplaza hacia atrás; sino, es rechazado; 
+            si no hay especificación, es una consulta dependiente. 
+            Si especificamos argumentos, con comas separamos la lista de los tipos de datos definidos
+        a ser reemplazado por valores de parámetros en una consulta dada. Cuando el cursor es abierto,
+        los valores actuales sustituyen esos nombres.
+    */
+
+-- practicas
+    create or replace function cursor1() returns SETOF estudiante as
+    $$
+    DECLARE
+        cursorreg CURSOR FOR SELECT * FROM estudiante WHERE idest % 2 = 0;
+        var estudiante%rowtype;
+    BEGIN
+        OPEN cursorreg;
+        LOOP
+            FETCH FROM cursorreg INTO var;
+            exit WHEN not found;
+                
+        end loop;
+        close cursorreg;
+    END $$ LANGUAGE 'plpgsql';
+
+    SELECT cursor1();
